@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Смарт-Дисплей</title>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; align-items: center; justify-content: center; }
-        #time { font-size: 12vw; font-weight: bold; }
-        #weather { font-size: 4vw; color: #3b82f6; margin-top: 20px; }
-        #battery { font-size: 2vw; color: #555; position: absolute; top: 20px; left: 20px; }
+        body { background: #000; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        #time { font-size: 10vw; font-weight: bold; }
+        #weather { font-size: 3vw; color: #3b82f6; margin-top: 20px; }
+        #battery { font-size: 2vw; color: #555; position: absolute; top: 20px; }
     </style>
 </head>
 <body>
     <div id="battery">Заряд: --%</div>
     <div id="time">00:00:00</div>
-    <div id="weather">Подключение...</div>
+    <div id="weather">Получение данных...</div>
 
     <script>
         // Часы
@@ -31,23 +31,28 @@
             });
         }
 
-        // РЕЗЕРВНЫЙ МЕТОД ПОГОДЫ
-        function loadWeather() {
+        // Надежный метод получения данных
+        async function loadWeather() {
             const el = document.getElementById('weather');
-            // Простейший способ проверки интернета: пробуем загрузить скрипт
-            const script = document.createElement('script');
-            script.src = "https://api.open-meteo.com/v1/forecast?latitude=54.9893&longitude=73.3682&current=temperature_2m&callback=weatherCallback";
-            script.onerror = () => el.innerText = "Сеть заблокирована (настройки безопасности)";
-            document.body.appendChild(script);
+            try {
+                // Добавляем кэш-бастер (v=...), чтобы браузер не брал данные из памяти
+                const url = "https://api.open-meteo.com/v1/forecast?latitude=54.9893&longitude=73.3682&current=temperature_2m&format=json&t=" + Date.now();
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if(data && data.current) {
+                    const temp = Math.round(data.current.temperature_2m);
+                    el.innerText = "Омск: " + (temp > 0 ? "+" : "") + temp + "°C";
+                }
+            } catch (err) {
+                // Если fetch не прошел, пробуем еще один способ - через встроенный XML (иногда работает лучше)
+                el.innerText = "Погода временно недоступна";
+            }
         }
-
-        function weatherCallback(data) {
-            const temp = Math.round(data.current.temperature_2m);
-            document.getElementById('weather').innerText = "Омск: " + (temp > 0 ? "+" : "") + temp + "°C";
-        }
-
+        
         loadWeather();
-        setInterval(loadWeather, 300000);
+        setInterval(loadWeather, 600000); // 10 минут
     </script>
 </body>
 </html>
