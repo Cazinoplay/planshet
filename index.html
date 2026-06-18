@@ -3,81 +3,298 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Смарт-Дисплей</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Домашний Смарт-Дисплей</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            background-color: #0b0f19;
-            color: #ffffff;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            padding: 40px;
-            justify-content: space-between;
-            user-select: none;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
-        /* Верхняя панель */
-        .top-row { display: flex; justify-content: flex-start; }
-        .battery-box {
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0b0f19;
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 4vw; 
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            overflow: hidden;
+            user-select: none;
+            cursor: pointer;
+        }
+
+        /* Верхняя панель: Батарея */
+        .top-row {
+            display: flex;
+            justify-content: flex-start;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .battery-container {
             background: rgba(255, 255, 255, 0.05);
             padding: 10px 20px;
             border-radius: 15px;
-            font-size: 1.2rem;
+            backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: clamp(1rem, 2vw, 1.4rem);
+            font-weight: 600;
         }
 
-        /* Часы и дата */
-        .main-clock { text-align: center; margin: auto 0; }
-        #time { font-size: 10rem; font-weight: 700; }
-        #date { font-size: 2.5rem; color: #94a3b8; }
+        .battery-icon {
+            width: clamp(40px, 5vw, 55px);
+            height: clamp(20px, 2.5vw, 27px);
+            border: 3px solid #fff;
+            border-radius: 6px;
+            position: relative;
+            padding: 2px;
+        }
 
-        /* Нижний блок (Омск) */
-        .info-panel {
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 20px;
-            padding: 30px;
+        .battery-icon::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 5px;
+            height: 9px;
+            background: #fff;
+            border-radius: 0 3px 3px 0;
+        }
+
+        .battery-level {
+            height: 100%;
+            background: #4caf50;
+            width: 100%;
+            border-radius: 2px;
+            transition: width 0.5s ease, background-color 0.5s ease;
+        }
+
+        @keyframes charging {
+            0% { opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { opacity: 0.3; }
+        }
+        .charging { animation: charging 1.5s infinite; }
+
+        /* Центр: Время и Дата */
+        .main-clock {
             text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            width: 100%;
+            margin: auto 0;
         }
-        .city-title { font-size: 1.5rem; color: #3b82f6; text-transform: uppercase; letter-spacing: 2px; }
-        .status-text { font-size: 1.8rem; margin-top: 10px; }
+
+        #time {
+            font-size: clamp(4.5rem, 14vw, 12rem); 
+            font-weight: 700;
+            line-height: 0.9;
+            letter-spacing: -2px;
+            text-shadow: 0 0 40px rgba(255,255,255,0.15);
+        }
+
+        #date {
+            font-size: clamp(1.4rem, 3.5vw, 2.8rem);
+            color: #94a3b8;
+            margin-top: 2vh;
+            font-weight: 400;
+            text-transform: capitalize;
+        }
+
+        /* Низ: Автономная Погода */
+        .weather-row {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .weather-box {
+            width: 100%;
+            max-width: 650px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 24px;
+            padding: 3vw 5vw;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .weather-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .weather-city {
+            font-size: clamp(1.1rem, 2.5vw, 1.6rem);
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .weather-desc {
+            font-size: clamp(0.9rem, 1.8vw, 1.3rem);
+            color: #3b82f6;
+        }
+
+        .weather-temp {
+            font-size: clamp(2.3rem, 5.5vw, 4rem);
+            font-weight: 700;
+            color: #ffffff;
+            white-space: nowrap;
+        }
+
+        /* Подсказка полноэкранного режима */
+        .fullscreen-hint {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.3);
+            background: rgba(0,0,0,0.4);
+            padding: 5px 10px;
+            border-radius: 5px;
+            pointer-events: none;
+            transition: opacity 1s;
+        }
     </style>
 </head>
-<body>
+<body onclick="toggleFullscreen()">
 
+    <div class="fullscreen-hint" id="hint">Тапни по экрану, чтобы убрать рамки браузера</div>
+
+    <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
     <div class="top-row">
-        <div class="battery-box" id="battery-text">Заряд: --%</div>
+        <div class="battery-container" id="battery-box">
+            <div class="battery-icon">
+                <div class="battery-level" id="battery-level"></div>
+            </div>
+            <span id="battery-text">--%</span>
+        </div>
     </div>
 
+    <!-- ЦЕНТР: ЧАСЫ -->
     <div class="main-clock">
         <div id="time">00:00:00</div>
-        <div id="date">--</div>
+        <div id="date">Понедельник, 1 января</div>
     </div>
 
-    <div class="info-panel">
-        <div class="city-title">ОМСК</div>
-        <div class="status-text">Сибирский уют</div>
+    <!-- НИЗ: ПОГОДА -->
+    <div class="weather-row">
+        <div class="weather-box">
+            <div class="weather-info">
+                <div class="weather-city">ОМСК СЕЙЧАС</div>
+                <div class="weather-desc" id="weather-status">Отличный день!</div>
+            </div>
+            <div class="weather-temp" id="weather-temp">Омск</div>
+        </div>
     </div>
 
     <script>
-        // Обновление времени и даты
+        // --- ФУНКЦИЯ ДЛЯ ПОЛНОЭКРАННОГО РЕЖИМА ---
+        function toggleFullscreen() {
+            try {
+                if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement) {
+                    var docElm = document.documentElement;
+                    if (docElm.requestFullscreen) { docElm.requestFullscreen(); }
+                    else if (docElm.mozRequestFullScreen) { docElm.mozRequestFullScreen(); }
+                    else if (docElm.webkitRequestFullscreen) { docElm.webkitRequestFullscreen(); }
+                    document.getElementById('hint').style.opacity = '0';
+                } else {
+                    if (document.exitFullscreen) { document.exitFullscreen(); }
+                    else if (document.mozCancelFullScreen) { document.mozCancelFullScreen(); }
+                    else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
+                    document.getElementById('hint').style.opacity = '1';
+                }
+            } catch(e) {
+                document.getElementById('hint').style.display = 'none';
+            }
+        }
+
+        // --- УМНАЯ АВТОНОМНАЯ ПОГОДА (БЕЗ ИНТЕРНЕТА) ---
+        function updateOfflineWeather() {
+            var now = new Date();
+            var month = now.getMonth(); // 0 - Январь, 11 - Декабрь
+            
+            var tempText = "";
+            var descText = "";
+
+            // Статистические данные погоды в Омске по месяцам + советы
+            if (month === 0) { tempText = "-16°C"; descText = "Январь • Одевайся теплее"; }
+            else if (month === 1) { tempText = "-14°C"; descText = "Февраль • Сибирские метели"; }
+            else if (month === 2) { tempText = "-6°C"; descText = "Март • Начало оттепели"; }
+            else if (month === 3) { tempText = "+5°C"; descText = "Апрель • Весна в Омске"; }
+            else if (month === 4) { tempText = "+15°C"; descText = "Май • Всё расцветает"; }
+            else if (month === 5) { tempText = "+20°C"; descText = "Июнь • Время прогулок"; }
+            else if (month === 6) { tempText = "+22°C"; descText = "Июль • Самый разгар лета"; }
+            else if (month === 7) { tempText = "+19°C"; descText = "Август • Тёплые вечера"; }
+            else if (month === 8) { tempText = "+12°C"; descText = "Сентябрь • Золотая осень"; }
+            else if (month === 9) { tempText = "+3°C"; descText = "Октябрь • Пора пить горячий чай"; }
+            else if (month === 10) { tempText = "-6°C"; descText = "Ноябрь • Первый снег"; }
+            else if (month === 11) { tempText = "-13°C"; descText = "Декабрь • Зимняя сказка"; }
+
+            document.getElementById('weather-temp').textContent = tempText;
+            document.getElementById('weather-status').textContent = descText;
+        }
+        updateOfflineWeather();
+        // Обновляем раз в час на всякий случай
+        setInterval(updateOfflineWeather, 60 * 60 * 1000);
+
+
+        // --- ОБНОВЛЕНИЕ ВРЕМЕНИ И ДАТЫ ---
         function updateClock() {
-            var n = new Date();
-            document.getElementById('time').textContent = n.toLocaleTimeString('ru-RU');
-            document.getElementById('date').textContent = n.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+            var now = new Date();
+            var hours = String(now.getHours());
+            if (hours.length < 2) hours = '0' + hours;
+            var minutes = String(now.getMinutes());
+            if (minutes.length < 2) minutes = '0' + minutes;
+            var seconds = String(now.getSeconds());
+            if (seconds.length < 2) seconds = '0' + seconds;
+            
+            document.getElementById('time').textContent = hours + ':' + minutes + ':' + seconds;
+
+            var options = { weekday: 'long', day: 'numeric', month: 'long' };
+            document.getElementById('date').textContent = now.toLocaleDateString('ru-RU', options);
         }
         setInterval(updateClock, 1000);
         updateClock();
 
-        // Обновление батареи
-        if (navigator.getBattery) {
-            navigator.getBattery().then(function(b) {
-                function update() { document.getElementById('battery-text').textContent = 'Заряд: ' + Math.round(b.level * 100) + '%'; }
-                update();
-                b.addEventListener('levelchange', update);
+
+        // --- КОНТРОЛЬ БАТАРЕИ ---
+        var getBattery = navigator.getBattery || navigator.webkitGetBattery || navigator.mozGetBattery;
+        if (getBattery) {
+            navigator.getBattery().then(function(battery) {
+                function updateBatteryStatus() {
+                    var level = Math.round(battery.level * 100);
+                    document.getElementById('battery-text').textContent = level + '%';
+                    var levelDiv = document.getElementById('battery-level');
+                    levelDiv.style.width = level + '%';
+
+                    if (level <= 15) levelDiv.style.backgroundColor = '#ef4444';
+                    else if (level <= 40) levelDiv.style.backgroundColor = '#f59e0b';
+                    else levelDiv.style.backgroundColor = '#4caf50';
+
+                    var batteryBox = document.getElementById('battery-box');
+                    if (battery.charging) batteryBox.className = 'battery-container charging';
+                    else batteryBox.className = 'battery-container';
+                }
+                updateBatteryStatus();
+                battery.addEventListener('levelchange', updateBatteryStatus);
+                battery.addEventListener('chargingchange', updateBatteryStatus);
             });
+        } else {
+            document.getElementById('battery-box').style.display = 'none';
         }
     </script>
 </body>
