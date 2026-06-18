@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Домашний Смарт-Дисплей</title>
     <style>
         * {
@@ -16,7 +18,6 @@
             background-color: #0b0f19;
             color: #ffffff;
             min-height: 100vh;
-            /* Используем динамические отступы от размера экрана */
             padding: 4vw; 
             display: flex;
             flex-direction: column;
@@ -24,6 +25,7 @@
             align-items: center;
             overflow: hidden;
             user-select: none;
+            cursor: pointer; /* Показывает, что на экран можно нажать */
         }
 
         /* Верхняя панель: Батарея */
@@ -43,7 +45,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            font-size: clamp(1rem, 2vw, 1.4rem); /* Адаптивный размер текста */
+            font-size: clamp(1rem, 2vw, 1.4rem);
             font-weight: 600;
         }
 
@@ -91,7 +93,6 @@
         }
 
         #time {
-            /* Шрифт подстраивается под ширину экрана: от 4.5rem до 12rem */
             font-size: clamp(4.5rem, 14vw, 12rem); 
             font-weight: 700;
             line-height: 0.9;
@@ -100,7 +101,6 @@
         }
 
         #date {
-            /* Адаптивный размер даты */
             font-size: clamp(1.4rem, 3.5vw, 2.8rem);
             color: #94a3b8;
             margin-top: 2vh;
@@ -154,11 +154,26 @@
             color: #ffffff;
             white-space: nowrap;
         }
+
+        /* Небольшая плашка-подсказка сверху */
+        .fullscreen-hint {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.3);
+            background: rgba(0,0,0,0.4);
+            padding: 5px 10px;
+            border-radius: 5px;
+            pointer-events: none;
+            transition: opacity 1s;
+        }
     </style>
 </head>
-<body>
+<body onclick="toggleFullscreen()">
 
-    <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
+    <div class="fullscreen-hint" id="hint">Тапни по экрану, чтобы убрать рамки браузера</div>
+
     <div class="top-row">
         <div class="battery-container" id="battery-box">
             <div class="battery-icon">
@@ -168,13 +183,11 @@
         </div>
     </div>
 
-    <!-- ЦЕНТР: ЧАСЫ -->
     <div class="main-clock">
         <div id="time">00:00:00</div>
         <div id="date">Понедельник, 1 января</div>
     </div>
 
-    <!-- НИЗ: ПОГОДА -->
     <div class="weather-row">
         <div class="weather-box">
             <div class="weather-info">
@@ -186,7 +199,21 @@
     </div>
 
     <script>
-        // Координаты Омска
+        // --- ФУНКЦИЯ ДЛЯ ПОЛНОЭКРАННОГО РЕЖИМА ---
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().then(() => {
+                    document.getElementById('hint').style.opacity = '0'; // прячем подсказку
+                }).catch(err => {
+                    console.log(`Ошибка перехода в фуллскрин: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+                document.getElementById('hint').style.opacity = '1';
+            }
+        }
+
+        // Погода Омск
         const LATITUDE = 54.9924;  
         const LONGITUDE = 73.3686; 
 
@@ -210,15 +237,11 @@
 
         function getWeatherDescription(code) {
             const codes = {
-                0: "Ясно",
-                1: "Преимущественно ясно", 2: "Переменная облачность", 3: "Пасмурно",
-                45: "Туман", 48: "Иней с туманом",
-                51: "Легкая морось", 53: "Морось", 55: "Плотная морось",
-                61: "Слабый дождь", 63: "Умеренный дождь", 65: "Сильный дождь",
-                71: "Слабый снегопад", 73: "Снегопад", 75: "Сильный снегопад",
-                77: "Снежные зерна",
-                80: "Слабый ливень", 81: "Ливень", 82: "Сильный ливень",
-                85: "Слабый снежный ливень", 86: "Сильный снежный ливень",
+                0: "Ясно", 1: "Преимущественно ясно", 2: "Переменная облачность", 3: "Пасмурно",
+                45: "Туман", 48: "Иней с туманом", 51: "Легкая морось", 53: "Морось", 55: "Плотная морось",
+                61: "Слабый дождь", 63: "Умеренный дождь", 65: "Сильный дождь", 71: "Слабый снегопад",
+                73: "Снегопад", 75: "Сильный снегопад", 77: "Снежные зерна", 80: "Слабый ливень",
+                81: "Ливень", 82: "Сильный ливень", 85: "Слабый снежный ливень", 86: "Сильный снежный ливень",
                 95: "Гроза", 96: "Гроза с градом"
             };
             return codes[code] || "Облачно";
