@@ -7,76 +7,74 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Segoe UI', sans-serif;
             background-color: #0b0f19;
             color: #ffffff;
-            min-height: 100vh;
-            padding: 4vw;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             flex-direction: column;
+            height: 100vh;
+            padding: 40px;
             justify-content: space-between;
-            align-items: center;
-            overflow: hidden;
             user-select: none;
         }
 
-        .top-row { width: 100%; max-width: 800px; display: flex; justify-content: flex-start; }
-        .battery-container {
+        /* Верхняя панель */
+        .top-row { display: flex; justify-content: flex-start; }
+        .battery-box {
             background: rgba(255, 255, 255, 0.05);
             padding: 10px 20px;
             border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
             font-size: 1.2rem;
-            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .main-clock { text-align: center; width: 100%; margin: auto 0; }
-        #time { font-size: clamp(5rem, 15vw, 12rem); font-weight: 700; line-height: 0.9; }
-        #date { font-size: clamp(1.5rem, 4vw, 3rem); color: #94a3b8; margin-top: 2vh; }
+        /* Часы и дата */
+        .main-clock { text-align: center; margin: auto 0; }
+        #time { font-size: 10rem; font-weight: 700; }
+        #date { font-size: 2.5rem; color: #94a3b8; }
 
-        /* Блок Яндекс.Погоды */
-        .weather-row { width: 100%; max-width: 600px; margin-top: 20px; }
-        .weather-box {
-            background: #fff; /* Фон Яндекса белый, он сам адаптируется */
+        /* Нижний блок (Омск) */
+        .info-panel {
+            background: rgba(255, 255, 255, 0.03);
             border-radius: 20px;
-            overflow: hidden;
-            padding: 5px;
+            padding: 30px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
+        .city-title { font-size: 1.5rem; color: #3b82f6; text-transform: uppercase; letter-spacing: 2px; }
+        .status-text { font-size: 1.8rem; margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <div class="top-row">
-        <div class="battery-container" id="battery-box">🔋 <span id="battery-text">--%</span></div>
+        <div class="battery-box" id="battery-text">Заряд: --%</div>
     </div>
 
     <div class="main-clock">
-        <div id="time">00:00</div>
+        <div id="time">00:00:00</div>
         <div id="date">--</div>
     </div>
 
-    <div class="weather-row">
-        <div class="weather-box">
-            <a href="https://yandex.ru/pogoda/omsk" target="_blank">
-                <img src="https://yandex.ru/pogoda/informer/map?lat=54.9924&lon=73.3686&size=large" alt="Погода в Омске" width="100%" height="150" style="display:block; border:none;">
-            </a>
-        </div>
+    <div class="info-panel">
+        <div class="city-title">ОМСК</div>
+        <div class="status-text">Сибирский уют</div>
     </div>
 
     <script>
+        // Обновление времени и даты
         function updateClock() {
-            var now = new Date();
-            document.getElementById('time').textContent = 
-                String(now.getHours()).padStart(2, '0') + ':' + 
-                String(now.getMinutes()).padStart(2, '0');
-            document.getElementById('date').textContent = now.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+            var n = new Date();
+            document.getElementById('time').textContent = n.toLocaleTimeString('ru-RU');
+            document.getElementById('date').textContent = n.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
         }
         setInterval(updateClock, 1000);
         updateClock();
 
+        // Обновление батареи
         if (navigator.getBattery) {
             navigator.getBattery().then(function(b) {
-                function update() { document.getElementById('battery-text').textContent = Math.round(b.level * 100) + '%'; }
+                function update() { document.getElementById('battery-text').textContent = 'Заряд: ' + Math.round(b.level * 100) + '%'; }
                 update();
                 b.addEventListener('levelchange', update);
             });
