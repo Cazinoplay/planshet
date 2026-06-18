@@ -2,46 +2,57 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Смарт-Дисплей</title>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        body { 
+            background: #000; color: #fff; font-family: sans-serif; 
+            margin: 0; display: flex; flex-direction: column; 
+            height: 100vh; align-items: center; justify-content: center; 
+        }
+        #battery { position: absolute; top: 20px; left: 20px; font-size: 1.2rem; color: #555; }
         #time { font-size: 8rem; font-weight: bold; }
-        #weather { font-size: 2rem; color: #3b82f6; margin-top: 20px; }
+        #weather { font-size: 2.5rem; color: #3b82f6; margin-top: 20px; text-align: center; }
     </style>
 </head>
 <body>
-    <div id="time">--:--:--</div>
-    <div id="weather">Старт...</div>
+
+    <div id="battery">Заряд: --%</div>
+    <div id="time">00:00:00</div>
+    <div id="weather">Подключение...</div>
 
     <script>
-        // Часы (работают всегда)
+        // 1. Часы
         setInterval(() => {
             document.getElementById('time').innerText = new Date().toLocaleTimeString('ru');
         }, 1000);
 
-        // Функция погоды с "маячками"
+        // 2. Батарея
+        if (navigator.getBattery) {
+            navigator.getBattery().then(b => {
+                const update = () => document.getElementById('battery').innerText = "Заряд: " + Math.round(b.level * 100) + "%";
+                update();
+                b.onlevelchange = update;
+            });
+        }
+
+        // 3. Погода: максимально простой запрос
         async function loadWeather() {
-            const el = document.getElementById('weather');
-            el.innerText = "Запрос...";
-            
             try {
-                // Используем альтернативный API, который почти никогда не блокируется
-                const response = await fetch("https://wttr.in/Omsk?format=3");
-                
-                if (!response.ok) {
-                    el.innerText = "Ошибка ответа";
-                    return;
-                }
-                
+                // Параметр format=3 выдает чистый текст: "Omsk: 🌦️ +28°C"
+                // Кэш сбрасываем через Date.now(), чтобы не тянуть старое
+                const response = await fetch("https://wttr.in/Omsk?format=3&" + Date.now());
+                if (!response.ok) throw new Error();
                 const text = await response.text();
-                el.innerText = text;
+                document.getElementById('weather').innerText = text;
             } catch (err) {
-                el.innerText = "Ошибка: " + err.name;
-                console.log("Детали ошибки:", err);
+                document.getElementById('weather').innerText = "Нет связи с погодой";
             }
         }
         
         loadWeather();
+        // Обновляем раз в 15 минут
+        setInterval(loadWeather, 900000);
     </script>
 </body>
 </html>
