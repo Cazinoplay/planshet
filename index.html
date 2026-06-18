@@ -278,34 +278,55 @@
 
         // --- НАСТОЯЩАЯ ПОГОДА ИЗ ИНТЕРНЕТА (Open-Meteo, координаты Омска) ---
         function updateOnlineWeather() {
-            var lat = 54.9893;
-            var lon = 73.3682;
-            var url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat +
-                "&longitude=" + lon +
-                "&current_weather=true&windspeed_unit=ms&timezone=auto";
-
-            fetch(url)
-                .then(function(response) {
-                    if (!response.ok) throw new Error("Плохой ответ сервера погоды");
-                    return response.json();
-                })
-                .then(function(data) {
-                    var cw = data.current_weather;
-                    var temp = Math.round(cw.temperature);
-                    var tempText = (temp > 0 ? "+" : "") + temp + "°C";
-                    var desc = getWeatherDescription(cw.weathercode, cw.is_day === 1);
-                    var wind = Math.round(cw.windspeed);
-                    var descText = desc + " • ветер " + wind + " м/с";
-
-                    document.getElementById('weather-temp').textContent = tempText;
-                    document.getElementById('weather-status').textContent = descText;
-                })
-                .catch(function(err) {
-                    console.warn("Не удалось загрузить погоду из интернета, показываю резервные данные:", err);
+            try {
+                if (typeof fetch !== 'function') {
+                    console.warn("В этом браузере нет fetch(), показываю резервные данные");
                     updateOfflineWeather();
-                });
+                    return;
+                }
+
+                var lat = 54.9893;
+                var lon = 73.3682;
+                var url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat +
+                    "&longitude=" + lon +
+                    "&current_weather=true&windspeed_unit=ms&timezone=auto";
+
+                var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+                var timeoutId = controller ? setTimeout(function() { controller.abort(); }, 8000) : null;
+                var fetchOptions = controller ? { signal: controller.signal } : undefined;
+
+                fetch(url, fetchOptions)
+                    .then(function(response) {
+                        if (timeoutId) clearTimeout(timeoutId);
+                        if (!response.ok) throw new Error("Плохой ответ сервера погоды");
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        var cw = data.current_weather;
+                        var temp = Math.round(cw.temperature);
+                        var tempText = (temp > 0 ? "+" : "") + temp + "°C";
+                        var desc = getWeatherDescription(cw.weathercode, cw.is_day === 1);
+                        var wind = Math.round(cw.windspeed);
+                        var descText = desc + " • ветер " + wind + " м/с";
+
+                        document.getElementById('weather-temp').textContent = tempText;
+                        document.getElementById('weather-status').textContent = descText;
+                    })
+                    .catch(function(err) {
+                        if (timeoutId) clearTimeout(timeoutId);
+                        console.warn("Не удалось загрузить погоду из интернета, показываю резервные данные:", err);
+                        updateOfflineWeather();
+                    });
+            } catch (e) {
+                console.warn("Ошибка при попытке получить погоду:", e);
+                updateOfflineWeather();
+            }
         }
 
+        // Сразу показываем хотя бы примерную погоду по месяцу, чтобы экран
+        // никогда не оставался с надписью "Омск" из заготовки в HTML
+        updateOfflineWeather();
+        // Затем пробуем подгрузить настоящую погоду из интернета
         updateOnlineWeather();
         // Обновляем раз в 10 минут
         setInterval(updateOnlineWeather, 10 * 60 * 1000);
