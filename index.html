@@ -5,21 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Смарт-Дисплей</title>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; align-items: center; justify-content: space-around; }
-        #time { font-size: 15vh; font-weight: bold; }
-        #weather { font-size: 5vh; color: #3b82f6; text-align: center; }
-        #battery { font-size: 3vh; color: #666; }
+        body { background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; align-items: center; justify-content: center; }
+        #time { font-size: 12vw; font-weight: bold; }
+        #weather { font-size: 4vw; color: #3b82f6; margin-top: 20px; }
+        #battery { font-size: 2vw; color: #555; position: absolute; top: 20px; left: 20px; }
     </style>
 </head>
 <body>
     <div id="battery">Заряд: --%</div>
-    <div id="time">00:00</div>
-    <div id="weather">Загрузка данных...</div>
+    <div id="time">00:00:00</div>
+    <div id="weather">Подключение...</div>
 
     <script>
-        // 1. Часы
+        // 1. Часы с секундами
         setInterval(() => {
-            document.getElementById('time').innerText = new Date().toLocaleTimeString('ru', {hour: '2-digit', minute:'2-digit'});
+            document.getElementById('time').innerText = new Date().toLocaleTimeString('ru');
         }, 1000);
 
         // 2. Батарея
@@ -31,22 +31,27 @@
             });
         }
 
-        // 3. Погода через более простой подход
+        // 3. Быстрая погода с защитой от "вечной загрузки"
         async function loadWeather() {
             const el = document.getElementById('weather');
             try {
-                // Используем другой API (через сервис, который часто работает лучше на планшетах)
-                const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=54.9893&longitude=73.3682&current=temperature_2m");
-                if (!res.ok) throw new Error("API статус " + res.status);
+                // Используем контроллер для принудительного разрыва, если сеть висит
+                const controller = new AbortController();
+                const id = setTimeout(() => controller.abort(), 5000); 
+
+                const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=54.9893&longitude=73.3682&current=temperature_2m", { signal: controller.signal });
+                clearTimeout(id);
+
+                if (!res.ok) throw new Error("Ошибка сервера");
                 const data = await res.json();
                 el.innerText = "Омск: " + Math.round(data.current.temperature_2m) + "°C";
             } catch (err) {
-                // Если ошибка, выводим что именно не так
-                el.innerText = "Ошибка: " + err.message;
+                el.innerText = "Сеть недоступна";
+                console.error(err);
             }
         }
         loadWeather();
-        setInterval(loadWeather, 300000);
+        setInterval(loadWeather, 60000); // Проверка раз в минуту
     </script>
 </body>
 </html>
