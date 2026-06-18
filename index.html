@@ -3,259 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <title>Домашний Смарт-Дисплей</title>
+    <title>Смарт-Дисплей</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             background-color: #0b0f19;
             color: #ffffff;
             min-height: 100vh;
-            padding: 4vw; 
+            padding: 4vw;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
             overflow: hidden;
             user-select: none;
-            cursor: pointer;
         }
 
-        /* Верхняя панель: Батарея */
-        .top-row {
-            display: flex;
-            justify-content: flex-start;
-            width: 100%;
-            max-width: 800px;
-        }
-
+        .top-row { width: 100%; max-width: 800px; display: flex; justify-content: flex-start; }
         .battery-container {
             background: rgba(255, 255, 255, 0.05);
             padding: 10px 20px;
             border-radius: 15px;
-            backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: clamp(1rem, 2vw, 1.4rem);
+            font-size: 1.2rem;
             font-weight: 600;
         }
 
-        .battery-icon {
-            width: clamp(40px, 5vw, 55px);
-            height: clamp(20px, 2.5vw, 27px);
-            border: 3px solid #fff;
-            border-radius: 6px;
-            position: relative;
-            padding: 2px;
-        }
+        .main-clock { text-align: center; width: 100%; margin: auto 0; }
+        #time { font-size: clamp(5rem, 15vw, 12rem); font-weight: 700; line-height: 0.9; }
+        #date { font-size: clamp(1.5rem, 4vw, 3rem); color: #94a3b8; margin-top: 2vh; }
 
-        .battery-icon::after {
-            content: '';
-            position: absolute;
-            right: -8px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 5px;
-            height: 9px;
-            background: #fff;
-            border-radius: 0 3px 3px 0;
-        }
-
-        .battery-level {
-            height: 100%;
-            background: #4caf50;
-            width: 100%;
-            border-radius: 2px;
-            transition: width 0.5s ease, background-color 0.5s ease;
-        }
-
-        @keyframes charging {
-            0% { opacity: 0.3; }
-            50% { opacity: 1; }
-            100% { opacity: 0.3; }
-        }
-        .charging { animation: charging 1.5s infinite; }
-
-        /* Центр: Время и Дата */
-        .main-clock {
-            text-align: center;
-            width: 100%;
-            margin: auto 0;
-        }
-
-        #time {
-            font-size: clamp(4.5rem, 14vw, 12rem); 
-            font-weight: 700;
-            line-height: 0.9;
-            letter-spacing: -2px;
-            text-shadow: 0 0 40px rgba(255,255,255,0.15);
-        }
-
-        #date {
-            font-size: clamp(1.4rem, 3.5vw, 2.8rem);
-            color: #94a3b8;
-            margin-top: 2vh;
-            font-weight: 400;
-            text-transform: capitalize;
-        }
-
-        /* Низ: Погода (Ультра-надежный iframe для старых устройств) */
-        .weather-row {
-            display: flex;
-            justify-content: center;
-            width: 100%;
-        }
-
+        /* Блок Яндекс.Погоды */
+        .weather-row { width: 100%; max-width: 600px; margin-top: 20px; }
         .weather-box {
-            width: 100%;
-            max-width: 650px;
-            /* Прозрачный контейнер под дизайн */
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 24px;
-            padding: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background: #fff; /* Фон Яндекса белый, он сам адаптируется */
+            border-radius: 20px;
             overflow: hidden;
-        }
-
-        /* Настройки фрейма виджета */
-        .weather-box iframe {
-            border: none;
-            outline: none;
-            width: 100%;
-            height: 110px; /* Фиксированная высота красивого горизонтального виджета */
-            pointer-events: none; /* Чтобы тапы сквозь него открывали фуллскрин */
-        }
-
-        /* Подсказка полноэкранного режима */
-        .fullscreen-hint {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.3);
-            background: rgba(0,0,0,0.4);
-            padding: 5px 10px;
-            border-radius: 5px;
-            pointer-events: none;
-            transition: opacity 1s;
+            padding: 5px;
         }
     </style>
 </head>
-<body onclick="toggleFullscreen()">
+<body>
 
-    <div class="fullscreen-hint" id="hint">Тапни по экрану, чтобы убрать рамки браузера</div>
-
-    <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
     <div class="top-row">
-        <div class="battery-container" id="battery-box">
-            <div class="battery-icon">
-                <div class="battery-level" id="battery-level"></div>
-            </div>
-            <span id="battery-text">--%</span>
-        </div>
+        <div class="battery-container" id="battery-box">🔋 <span id="battery-text">--%</span></div>
     </div>
 
-    <!-- ЦЕНТР: ЧАСЫ -->
     <div class="main-clock">
-        <div id="time">00:00:00</div>
-        <div id="date">Понедельник, 1 января</div>
+        <div id="time">00:00</div>
+        <div id="date">--</div>
     </div>
 
-    <!-- НИЗ: ПОГОДА -->
     <div class="weather-row">
         <div class="weather-box">
-            <!-- Железобетонный информер, который откроется везде -->
-            <iframe src="https:// someweather-provider-or-equivalent-clean-widget ...">
-                <!-- Альтернативный код на случай полной блокировки: стильный виджет от Яндекс/Погода с автонастройкой под Омск -->
-                <script>
-                    // Если iframe не поддерживается, используем проверенный информер от ruseo
-                </script>
-                <iframe src="https://voshod-solnca.ru/информеры/омск-погода" style="width:100%; height:90px; border:none; filter: invert(1) hue-rotate(180deg) contrast(1.2);"></iframe>
-            </iframe>
+            <a href="https://yandex.ru/pogoda/omsk" target="_blank">
+                <img src="https://yandex.ru/pogoda/informer/map?lat=54.9924&lon=73.3686&size=large" alt="Погода в Омске" width="100%" height="150" style="display:block; border:none;">
+            </a>
         </div>
     </div>
 
     <script>
-        // Специальный костыль для старых планшетов: если iframe выше не сработал, 
-        // мы принудительно заменяем внутренности на самый простой и неубиваемый информер погоды Омска
-        document.querySelector('.weather-box').innerHTML = `<iframe src="https://world-weather.ru/informer/russia/omsk/3/" width="100%" height="110" frameborder="0" scrolling="no" style="filter: invert(0.9) hue-rotate(190deg) brightness(1.2); scale: 1.05;"></iframe>`;
-
-        // --- ФУНКЦИЯ ДЛЯ ПОЛНОЭКРАННОГО РЕЖИМА ---
-        function toggleFullscreen() {
-            try {
-                if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement) {
-                    var docElm = document.documentElement;
-                    if (docElm.requestFullscreen) { docElm.requestFullscreen(); }
-                    else if (docElm.mozRequestFullScreen) { docElm.mozRequestFullScreen(); }
-                    else if (docElm.webkitRequestFullscreen) { docElm.webkitRequestFullscreen(); }
-                    document.getElementById('hint').style.opacity = '0';
-                } else {
-                    if (document.exitFullscreen) { document.exitFullscreen(); }
-                    else if (document.mozCancelFullScreen) { document.mozCancelFullScreen(); }
-                    else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
-                    document.getElementById('hint').style.opacity = '1';
-                }
-            } catch(e) {
-                // Если фуллскрин вообще не поддерживается старой системой, просто спрячем плашку
-                document.getElementById('hint').style.display = 'none';
-            }
-        }
-
-        // --- ОБНОВЛЕНИЕ ВРЕМЕНИ И ДАТЫ ---
         function updateClock() {
             var now = new Date();
-            var hours = String(now.getHours());
-            if (hours.length < 2) hours = '0' + hours;
-            var minutes = String(now.getMinutes());
-            if (minutes.length < 2) minutes = '0' + minutes;
-            var seconds = String(now.getSeconds());
-            if (seconds.length < 2) seconds = '0' + seconds;
-            
-            document.getElementById('time').textContent = hours + ':' + minutes + ':' + seconds;
-
-            var options = { weekday: 'long', day: 'numeric', month: 'long' };
-            document.getElementById('date').textContent = now.toLocaleDateString('ru-RU', options);
+            document.getElementById('time').textContent = 
+                String(now.getHours()).padStart(2, '0') + ':' + 
+                String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('date').textContent = now.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
         }
         setInterval(updateClock, 1000);
         updateClock();
 
-        // --- КОНТРОЛЬ БАТАРЕИ ---
-        var getBattery = navigator.getBattery || navigator.webkitGetBattery || navigator.mozGetBattery;
-        if (getBattery) {
-            navigator.getBattery().then(function(battery) {
-                function updateBatteryStatus() {
-                    var level = Math.round(battery.level * 100);
-                    document.getElementById('battery-text').textContent = level + '%';
-                    var levelDiv = document.getElementById('battery-level');
-                    levelDiv.style.width = level + '%';
-
-                    if (level <= 15) levelDiv.style.backgroundColor = '#ef4444';
-                    else if (level <= 40) levelDiv.style.backgroundColor = '#f59e0b';
-                    else levelDiv.style.backgroundColor = '#4caf50';
-
-                    var batteryBox = document.getElementById('battery-box');
-                    if (battery.charging) batteryBox.className = 'battery-container charging';
-                    else batteryBox.className = 'battery-container';
-                }
-                updateBatteryStatus();
-                battery.addEventListener('levelchange', updateBatteryStatus);
-                battery.addEventListener('chargingchange', updateBatteryStatus);
+        if (navigator.getBattery) {
+            navigator.getBattery().then(function(b) {
+                function update() { document.getElementById('battery-text').textContent = Math.round(b.level * 100) + '%'; }
+                update();
+                b.addEventListener('levelchange', update);
             });
-        } else {
-            document.getElementById('battery-box').style.display = 'none';
         }
     </script>
 </body>
