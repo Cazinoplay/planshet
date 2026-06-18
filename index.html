@@ -13,10 +13,9 @@
         #battery { position: absolute; top: 20px; left: 20px; font-size: 1.2rem; color: #555; }
         #time { font-size: 8rem; font-weight: bold; }
         
-        /* Стили для рамки с погодой */
         #weather-frame { 
-            border: none; width: 300px; height: 100px; margin-top: 20px; 
-            overflow: hidden; background: transparent;
+            border: none; width: 400px; height: 100px; margin-top: 20px; 
+            background: transparent;
         }
         
         #version { position: absolute; bottom: 10px; font-size: 0.8rem; color: #333; }
@@ -27,9 +26,9 @@
     <div id="battery">Заряд: --%</div>
     <div id="time">00:00:00</div>
 
-    <iframe id="weather-frame" src="https://wttr.in/Omsk?format=3&transparency=1&bgcolor=000"></iframe>
+    <iframe id="weather-frame" src="https://wttr.in/Omsk?format=3&transparency=1"></iframe>
 
-    <div id="version">v.1.4</div>
+    <div id="version">v.1.5</div>
 
     <script>
         // Часы
@@ -46,10 +45,11 @@
             });
         }
 
-        // Обновление iframe (чтобы погода не устаревала)
+        // Обновление iframe каждые 10 минут
         setInterval(() => {
-            document.getElementById('weather-frame').src = "https://wttr.in/Omsk?format=3&transparency=1&bgcolor=000&" + Date.now();
-        }, 600000); // 10 минут
+            const frame = document.getElementById('weather-frame');
+            frame.src = "https://wttr.in/Omsk?format=3&transparency=1&t=" + Date.now();
+        }, 600000);
     </script>
 </body>
 </html>
