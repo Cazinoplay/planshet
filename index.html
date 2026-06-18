@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Смарт-Дисплей</title>
     <style>
-        body { background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; align-items: center; justify-content: center; }
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; align-items: center; justify-content: center; }
         #time { font-size: 12vw; font-weight: bold; }
         #weather { font-size: 4vw; color: #3b82f6; margin-top: 20px; }
         #battery { font-size: 2vw; color: #555; position: absolute; top: 20px; left: 20px; }
@@ -17,12 +17,12 @@
     <div id="weather">Подключение...</div>
 
     <script>
-        // 1. Часы с секундами
+        // Часы
         setInterval(() => {
             document.getElementById('time').innerText = new Date().toLocaleTimeString('ru');
         }, 1000);
 
-        // 2. Батарея
+        // Батарея
         if (navigator.getBattery) {
             navigator.getBattery().then(b => {
                 const update = () => document.getElementById('battery').innerText = "Заряд: " + Math.round(b.level * 100) + "%";
@@ -31,27 +31,23 @@
             });
         }
 
-        // 3. Быстрая погода с защитой от "вечной загрузки"
-        async function loadWeather() {
+        // РЕЗЕРВНЫЙ МЕТОД ПОГОДЫ
+        function loadWeather() {
             const el = document.getElementById('weather');
-            try {
-                // Используем контроллер для принудительного разрыва, если сеть висит
-                const controller = new AbortController();
-                const id = setTimeout(() => controller.abort(), 5000); 
-
-                const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=54.9893&longitude=73.3682&current=temperature_2m", { signal: controller.signal });
-                clearTimeout(id);
-
-                if (!res.ok) throw new Error("Ошибка сервера");
-                const data = await res.json();
-                el.innerText = "Омск: " + Math.round(data.current.temperature_2m) + "°C";
-            } catch (err) {
-                el.innerText = "Сеть недоступна";
-                console.error(err);
-            }
+            // Простейший способ проверки интернета: пробуем загрузить скрипт
+            const script = document.createElement('script');
+            script.src = "https://api.open-meteo.com/v1/forecast?latitude=54.9893&longitude=73.3682&current=temperature_2m&callback=weatherCallback";
+            script.onerror = () => el.innerText = "Сеть заблокирована (настройки безопасности)";
+            document.body.appendChild(script);
         }
+
+        function weatherCallback(data) {
+            const temp = Math.round(data.current.temperature_2m);
+            document.getElementById('weather').innerText = "Омск: " + (temp > 0 ? "+" : "") + temp + "°C";
+        }
+
         loadWeather();
-        setInterval(loadWeather, 60000); // Проверка раз в минуту
+        setInterval(loadWeather, 300000);
     </script>
 </body>
 </html>
