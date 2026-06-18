@@ -232,34 +232,83 @@
             }
         }
 
-        // --- УМНАЯ АВТОНОМНАЯ ПОГОДА (БЕЗ ИНТЕРНЕТА) ---
+        // --- РЕЗЕРВНАЯ ПОГОДА ПО МЕСЯЦАМ (ИСПОЛЬЗУЕТСЯ ТОЛЬКО ЕСЛИ НЕТ ИНТЕРНЕТА) ---
         function updateOfflineWeather() {
             var now = new Date();
             var month = now.getMonth(); // 0 - Январь, 11 - Декабрь
-            
+
             var tempText = "";
             var descText = "";
 
             // Статистические данные погоды в Омске по месяцам + советы
-            if (month === 0) { tempText = "-16°C"; descText = "Январь • Одевайся теплее"; }
-            else if (month === 1) { tempText = "-14°C"; descText = "Февраль • Сибирские метели"; }
-            else if (month === 2) { tempText = "-6°C"; descText = "Март • Начало оттепели"; }
-            else if (month === 3) { tempText = "+5°C"; descText = "Апрель • Весна в Омске"; }
-            else if (month === 4) { tempText = "+15°C"; descText = "Май • Всё расцветает"; }
-            else if (month === 5) { tempText = "+20°C"; descText = "Июнь • Время прогулок"; }
-            else if (month === 6) { tempText = "+22°C"; descText = "Июль • Самый разгар лета"; }
-            else if (month === 7) { tempText = "+19°C"; descText = "Август • Тёплые вечера"; }
-            else if (month === 8) { tempText = "+12°C"; descText = "Сентябрь • Золотая осень"; }
-            else if (month === 9) { tempText = "+3°C"; descText = "Октябрь • Пора пить горячий чай"; }
-            else if (month === 10) { tempText = "-6°C"; descText = "Ноябрь • Первый снег"; }
-            else if (month === 11) { tempText = "-13°C"; descText = "Декабрь • Зимняя сказка"; }
+            if (month === 0) { tempText = "-16°C"; descText = "Нет связи • Обычно в январе так"; }
+            else if (month === 1) { tempText = "-14°C"; descText = "Нет связи • Обычно в феврале так"; }
+            else if (month === 2) { tempText = "-6°C"; descText = "Нет связи • Обычно в марте так"; }
+            else if (month === 3) { tempText = "+5°C"; descText = "Нет связи • Обычно в апреле так"; }
+            else if (month === 4) { tempText = "+15°C"; descText = "Нет связи • Обычно в мае так"; }
+            else if (month === 5) { tempText = "+20°C"; descText = "Нет связи • Обычно в июне так"; }
+            else if (month === 6) { tempText = "+22°C"; descText = "Нет связи • Обычно в июле так"; }
+            else if (month === 7) { tempText = "+19°C"; descText = "Нет связи • Обычно в августе так"; }
+            else if (month === 8) { tempText = "+12°C"; descText = "Нет связи • Обычно в сентябре так"; }
+            else if (month === 9) { tempText = "+3°C"; descText = "Нет связи • Обычно в октябре так"; }
+            else if (month === 10) { tempText = "-6°C"; descText = "Нет связи • Обычно в ноябре так"; }
+            else if (month === 11) { tempText = "-13°C"; descText = "Нет связи • Обычно в декабре так"; }
 
             document.getElementById('weather-temp').textContent = tempText;
             document.getElementById('weather-status').textContent = descText;
         }
-        updateOfflineWeather();
-        // Обновляем раз в час на всякий случай
-        setInterval(updateOfflineWeather, 60 * 60 * 1000);
+
+        // --- ПЕРЕВОД КОДА ПОГОДЫ (WMO) В ПОНЯТНЫЙ ТЕКСТ ---
+        function getWeatherDescription(code, isDay) {
+            if (code === 0) return isDay ? "Ясно" : "Ясная ночь";
+            if (code === 1 || code === 2) return "Малооблачно";
+            if (code === 3) return "Облачно";
+            if (code === 45 || code === 48) return "Туман";
+            if (code === 51 || code === 53 || code === 55) return "Морось";
+            if (code === 56 || code === 57) return "Ледяная морось";
+            if (code === 61 || code === 63 || code === 65) return "Дождь";
+            if (code === 66 || code === 67) return "Ледяной дождь";
+            if (code === 71 || code === 73 || code === 75 || code === 77) return "Снег";
+            if (code === 80 || code === 81 || code === 82) return "Ливень";
+            if (code === 85 || code === 86) return "Снегопад";
+            if (code === 95) return "Гроза";
+            if (code === 96 || code === 99) return "Гроза с градом";
+            return "Переменная погода";
+        }
+
+        // --- НАСТОЯЩАЯ ПОГОДА ИЗ ИНТЕРНЕТА (Open-Meteo, координаты Омска) ---
+        function updateOnlineWeather() {
+            var lat = 54.9893;
+            var lon = 73.3682;
+            var url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat +
+                "&longitude=" + lon +
+                "&current_weather=true&windspeed_unit=ms&timezone=auto";
+
+            fetch(url)
+                .then(function(response) {
+                    if (!response.ok) throw new Error("Плохой ответ сервера погоды");
+                    return response.json();
+                })
+                .then(function(data) {
+                    var cw = data.current_weather;
+                    var temp = Math.round(cw.temperature);
+                    var tempText = (temp > 0 ? "+" : "") + temp + "°C";
+                    var desc = getWeatherDescription(cw.weathercode, cw.is_day === 1);
+                    var wind = Math.round(cw.windspeed);
+                    var descText = desc + " • ветер " + wind + " м/с";
+
+                    document.getElementById('weather-temp').textContent = tempText;
+                    document.getElementById('weather-status').textContent = descText;
+                })
+                .catch(function(err) {
+                    console.warn("Не удалось загрузить погоду из интернета, показываю резервные данные:", err);
+                    updateOfflineWeather();
+                });
+        }
+
+        updateOnlineWeather();
+        // Обновляем раз в 10 минут
+        setInterval(updateOnlineWeather, 10 * 60 * 1000);
 
 
         // --- ОБНОВЛЕНИЕ ВРЕМЕНИ И ДАТЫ ---
